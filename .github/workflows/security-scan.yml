@@ -1,0 +1,79 @@
+name: Security Scan
+
+on:
+  schedule:
+    # Every Monday 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy-image-scan:
+    name: Trivy ECR Image Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - repo: backend
+            image: ${{ secrets.ECR_BACKEND_REPO }}
+          - repo: frontend
+            image: ${{ secrets.ECR_FRONTEND_REPO }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ vars.AWS_REGION || 'us-east-1' }} | \
+            docker login --username AWS --password-stdin \
+            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION || 'us-east-1' }}.amazonaws.com
+
+      - name: Pull latest image
+        run: |
+          docker pull ${{ matrix.image }}:latest
+
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}:latest
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-${{ matrix.repo }}.sarif
+
+      - name: Upload Trivy results
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.repo }}-sarif
+          path: trivy-${{ matrix.repo }}.sarif
+
+  gitleaks-history-scan:
+    name: Gitleaks Full History Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          scan-mode: all
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-results
+          path: .gitleaks-report.json
+        if: always()

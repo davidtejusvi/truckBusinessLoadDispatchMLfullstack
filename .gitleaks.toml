@@ -1,0 +1,23 @@
+title = "TruckBiz Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for test files, examples, and mock data"
+paths = [
+    '''frontend/src/pages/.*\.tsx''',
+    '''backend/src/types/.*\.ts''',
+    '''\.env\.example''',
+    '''docker-compose\.yml''',
+    '''README\.md''',
+    '''terraform/environments/.*/terraform\.tfvars''',
+]
+
+# Allow common mock tokens used in development
+regexes = [
+    '''truckbiz123''',
+    '''truckbiz-jwt-secret-key''',
+    '''your-super-secret-jwt-key-change-in-production''',
+    '''fallback-secret''',
+]

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "truckbiz.backendFullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "truckbiz.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+data:
+  PORT: {{ .Values.backend.env.PORT | quote }}
+  NODE_ENV: {{ .Values.backend.env.NODE_ENV | quote }}

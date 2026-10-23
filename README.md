@@ -109,9 +109,106 @@ Navigate to [http://localhost:5173](http://localhost:5173) and register a new ac
 
 ---
 
+## Infrastructure & CI/CD
+
+### CI/CD Pipeline Overview
+
+```
+┌─────────┐    ┌──────────┐    ┌─────────┐    ┌───────────┐    ┌──────────────┐
+│  Push    │──▶ │ Gitleaks  │──▶ │ Lint    │──▶ │  Trivy    │──▶ │  SonarCloud  │
+│  / PR    │    │ Secret    │    │ & Test  │    │  Vuln Scan│    │  Code Quality│
+└─────────┘    └──────────┘    └─────────┘    └───────────┘    └──────────────┘
+                                                                      │
+┌──────────────┐    ┌───────────┐    ┌──────────┐    ┌──────────────┐  │
+│  ArgoCD Sync │◀── │ Git Push  │◀── │  yq      │◀── │ Build & Push │◀─┘
+│  (auto-dev)  │    │ Helm vals │    │  Patch   │    │  to ECR      │
+└──────────────┘    └───────────┘    └──────────┘    └──────────────┘
+       │
+       ▼
+  ┌─────────┐
+  │  EKS     │  Backend (2-6 pods, HPA)  +  Frontend (2-3 pods)
+  │  Cluster │  Ingress (nginx + TLS)   +  NetworkPolicy (deny-all)
+  └─────────┘
+```
+
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `ci.yml` | Push / PR to main | Gitleaks → lint → test → Trivy → SonarCloud |
+| `cd.yml` | `workflow_dispatch` (dev/prod) | OIDC AWS login → build → ECR push → Helm update → Slack |
+| `security-scan.yml` | Cron (Mon 9am UTC) + manual | Trivy image scan + Gitleaks full history |
+
+### Required GitHub Secrets
+
+| Secret | Description |
+|---|---|
+| `AWS_DEPLOY_ROLE_ARN` | IAM role ARN for OIDC (no long-lived keys) |
+| `ECR_BACKEND_REPO` | ECR repository name for backend image |
+| `ECR_FRONTEND_REPO` | ECR repository name for frontend image |
+| `SONAR_TOKEN` | SonarCloud analysis token |
+| `SONAR_ORGANIZATION` | SonarCloud organization key |
+| `SLACK_WEBHOOK_URL` | Slack incoming webhook for deploy notifications |
+| `GITLEAKS_LICENSE` | Gitleaks Action license key (for private repos) |
+
+### Deploy via GitHub Actions
+
+```bash
+# Trigger CD pipeline for dev
+gh workflow run cd.yml -f environment=dev -f image_tag=v1.0.0
+
+# Trigger CD pipeline for prod
+gh workflow run cd.yml -f environment=prod -f image_tag=v1.0.0
+```
+
+### Terraform
+
+Provisions ECR, VPC (2 AZs), EKS 1.29, and RDS PostgreSQL on AWS.
+
+```bash
+# Dev environment
+cd terraform/environments/dev
+terraform init
+terraform plan
+terraform apply
+
+# Prod environment
+cd terraform/environments/prod
+terraform init
+terraform plan
+terraform apply
+```
+
+### Helm Chart
+
+```bash
+# Install to dev
+helm install truckbiz ./helm/truckbiz \
+  -f ./helm/truckbiz/values.yaml \
+  -f ./helm/truckbiz/values-dev.yaml \
+  -n truckbiz-dev --create-namespace
+
+# Install to prod
+helm install truckbiz ./helm/truckbiz \
+  -f ./helm/truckbiz/values.yaml \
+  -f ./helm/truckbiz/values-prod.yaml \
+  -n truckbiz-prod --create-namespace
+```
+
+### ArgoCD Setup
+
+```bash
+# Apply ArgoCD project + applications
+kubectl apply -f argocd/project.yaml
+kubectl apply -f argocd/application-dev.yaml
+kubectl apply -f argocd/application-prod.yaml
+```
+
+Dev syncs automatically (prune + self-heal). Prod requires manual sync via ArgoCD UI or `argocd app sync truckbiz-prod`.
+
+---
+
 ## Phase Roadmap
 
-### ✅ Phase 1 — Foundation & Auth (Current)
+### ✅ Phase 1 — Foundation & Auth
 - Monorepo setup (frontend + backend)
 - JWT authentication (register / login)
 - USA & Europe market selection
@@ -123,13 +220,13 @@ Navigate to [http://localhost:5173](http://localhost:5173) and register a new ac
 - PostgreSQL schema via Prisma ORM
 - Docker Compose for local services
 
-### 🔜 Phase 2 — DAT Integration
-- Real DAT load board API integration
-- Live load data from DAT One
-- Automated load sync and polling
-- Advanced search with more filters
-- Load detail pages with broker contacts
-- Email/SMS notifications for matching loads
+### ✅ Phase 2 — Load Board
+- 45 mock loads (25 USA + 20 Europe) with realistic lane data
+- Full search with 8 filter params (origin, dest, equipment, rate, distance, date)
+- Load detail page with rate breakdown + fuel estimate
+- Active loads page with revenue tracking
+- Pick load flow (claim → 409 on already-picked)
+- Load stats endpoint (by market, by equipment, averages)
 
 ### 🔮 Phase 3 — ML Predictions
 - AI-powered freight rate prediction engine
@@ -138,6 +235,16 @@ Navigate to [http://localhost:5173](http://localhost:5173) and register a new ac
 - Fuel cost estimator with live pricing
 - Market intelligence and benchmarking
 - Revenue optimization recommendations
+
+### ✅ Infrastructure & CI/CD
+- Terraform (ECR, VPC, EKS, RDS) — dev + prod
+- GitHub Actions (CI, CD, security scanning)
+- Gitleaks secret scanning
+- Trivy vulnerability scanning
+- SonarCloud code quality
+- Multi-stage Dockerfiles (non-root)
+- Helm chart (deployments, HPA, ingress, network policies)
+- ArgoCD GitOps (auto-sync dev, manual prod)
 
 ---
 

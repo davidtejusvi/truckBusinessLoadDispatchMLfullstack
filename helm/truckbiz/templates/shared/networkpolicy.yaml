@@ -1,0 +1,69 @@
+{{- if .Values.networkPolicy.enabled -}}
+# Deny all ingress by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "truckbiz.fullname" . }}-deny-all
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "truckbiz.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# Allow frontend → backend on port 3001
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "truckbiz.fullname" . }}-frontend-to-backend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "truckbiz.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+      {{- include "truckbiz.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: frontend
+              {{- include "truckbiz.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 3001
+
+---
+# Allow backend → postgres (RDS via egress, no pod selector needed in-cluster)
+# This is a placeholder for when postgres runs in-cluster
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "truckbiz.fullname" . }}-backend-to-postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "truckbiz.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+      {{- include "truckbiz.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # DNS
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+    # RDS PostgreSQL
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 5432
+{{- end }}

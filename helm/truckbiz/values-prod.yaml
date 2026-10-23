@@ -1,0 +1,37 @@
+# ── Production environment overrides ──────────────────────────────────────────
+
+backend:
+  image:
+    tag: prod-latest
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+frontend:
+  image:
+    tag: prod-latest
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  host: truckbiz.example.com
+  tls:
+    enabled: true
+    secretName: truckbiz-tls-prod
+
+hpa:
+  backend:
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 65

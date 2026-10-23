@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: truckbiz-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app: truckbiz
+    environment: prod
+spec:
+  project: truckbiz
+  source:
+    repoURL: https://github.com/YOUR_ORG/truckBusinessTrac
+    targetRevision: HEAD
+    path: helm/truckbiz
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: truckbiz-prod
+  # Production uses manual sync — no auto-sync
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

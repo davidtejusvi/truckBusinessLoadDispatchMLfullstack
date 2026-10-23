@@ -1,0 +1,115 @@
+name: CD — Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: dev
+        type: choice
+        options: [dev, prod]
+      image_tag:
+        description: 'Docker image tag (e.g. v1.0.0 or commit SHA)'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  deploy:
+    name: Build, Push & Deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push backend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPO }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          docker build -t $ECR_REGISTRY/$BACKEND_REPO:$IMAGE_TAG \
+                       -t $ECR_REGISTRY/$BACKEND_REPO:latest \
+                       ./backend
+          docker push $ECR_REGISTRY/$BACKEND_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$BACKEND_REPO:latest
+
+      - name: Build & push frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          FRONTEND_REPO: ${{ secrets.ECR_FRONTEND_REPO }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          docker build -t $ECR_REGISTRY/$FRONTEND_REPO:$IMAGE_TAG \
+                       -t $ECR_REGISTRY/$FRONTEND_REPO:latest \
+                       ./frontend
+          docker push $ECR_REGISTRY/$FRONTEND_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$FRONTEND_REPO:latest
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update Helm values with new image tags
+        env:
+          ENV: ${{ inputs.environment }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          BACKEND_REPO: ${{ secrets.ECR_BACKEND_REPO }}
+          FRONTEND_REPO: ${{ secrets.ECR_FRONTEND_REPO }}
+        run: |
+          yq e -i ".backend.image.repository = \"$ECR_REGISTRY/$BACKEND_REPO\"" helm/truckbiz/values-${ENV}.yaml
+          yq e -i ".backend.image.tag = \"$IMAGE_TAG\"" helm/truckbiz/values-${ENV}.yaml
+          yq e -i ".frontend.image.repository = \"$ECR_REGISTRY/$FRONTEND_REPO\"" helm/truckbiz/values-${ENV}.yaml
+          yq e -i ".frontend.image.tag = \"$IMAGE_TAG\"" helm/truckbiz/values-${ENV}.yaml
+
+      - name: Commit and push updated Helm values
+        env:
+          ENV: ${{ inputs.environment }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/truckbiz/values-${ENV}.yaml
+          git commit -m "chore: deploy $IMAGE_TAG to $ENV [skip ci]"
+          git push
+
+      - name: Notify Slack
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          ENV: ${{ inputs.environment }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          COMMIT_SHA: ${{ github.sha }}
+          STATUS: ${{ job.status }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-type: application/json' \
+            --data "{
+              \"text\": \"*TruckBiz Deployment*\",
+              \"attachments\": [{
+                \"color\": \"$([ '$STATUS' = 'success' ] && echo 'good' || echo 'danger')\",
+                \"fields\": [
+                  {\"title\": \"Environment\", \"value\": \"$ENV\", \"short\": true},
+                  {\"title\": \"Image Tag\", \"value\": \"$IMAGE_TAG\", \"short\": true},
+                  {\"title\": \"Commit SHA\", \"value\": \"$COMMIT_SHA\", \"short\": true},
+                  {\"title\": \"Status\", \"value\": \"$STATUS\", \"short\": true}
+                ]
+              }]
+            }"

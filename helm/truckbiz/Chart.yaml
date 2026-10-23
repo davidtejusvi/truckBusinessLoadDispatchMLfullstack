@@ -1,0 +1,13 @@
+apiVersion: v2
+name: truckbiz
+description: TruckBiz load board platform — carriers, brokers, and predictions
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - trucking
+  - logistics
+  - load-board
+  - dat
+maintainers:
+  - name: TruckBiz Team
