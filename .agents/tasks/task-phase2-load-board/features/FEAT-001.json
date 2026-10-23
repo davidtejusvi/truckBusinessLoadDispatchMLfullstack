@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Backend: shared Load types + expanded mock data + 5 new endpoints. Creates backend/src/types/load.ts with the full MockLoad interface (adding ratePerMile/ratePerKm, deliveryDate, postedBy, age, commodity, truckRequired fields). Rewrites loadsController.ts to export 25 USA + 20 Europe loads meeting all spec requirements. Adds getLoadById, loadStats handlers. Rewrites loads route file to wire all 5 endpoints.",
+  "status": "completed",
+  "steps": [
+    "Create backend/src/types/load.ts — define and export the MockLoad interface with all fields: id, externalId, market ('USA'|'EUROPE'), originCity, originState, destCity, destState, equipmentType, weight, distance, rate, ratePerMile (number|null), ratePerKm (number|null), pickupDate (ISO string), deliveryDate (ISO string), status ('AVAILABLE'|'PICKED'|'COMPLETED'|'CANCELLED'), pickedById (string|null), postedBy (string), age (number — minutes since posted), commodity (string), truckRequired (string).",
+    "Rewrite backend/src/controllers/loadsController.ts — import MockLoad from '../types/load'. Define the mockLoads array with exactly 25 USA loads covering lanes: Chicago→Atlanta, Dallas→LA, NYC→Miami, Seattle→Phoenix, Denver→Houston, Chicago→Dallas, LA→Seattle, Miami→Chicago, Phoenix→Denver, Houston→Nashville, Atlanta→NYC, Boston→Philadelphia, Kansas City→Memphis, Minneapolis→Detroit, Charlotte→Nashville, Dallas→Chicago, Seattle→Portland, Denver→Salt Lake City, NYC→Washington DC, Houston→San Antonio, LA→Las Vegas, Phoenix→Tucson, Atlanta→Birmingham, Chicago→St Louis, Memphis→Nashville. Equipment types cycle through: Flatbed, Dry Van, Reefer, Step Deck, Lowboy. Rates $1.50-$3.20/mile, distances 400-2500 miles. All pickupDate values spread across next 14 days from a base date. Include 20 Europe loads covering: Amsterdam→Paris, Hamburg→Warsaw, Madrid→Lisbon, Milan→Vienna, Rotterdam→Frankfurt, Paris→Berlin, Brussels→Amsterdam, Warsaw→Prague, Lisbon→Madrid, Vienna→Budapest, Frankfurt→Munich, Munich→Zurich, Zurich→Lyon, Lyon→Barcelona, Barcelona→Madrid, Rome→Milan, Athens→Sofia, Sofia→Bucharest, Bucharest→Kiev, Copenhagen→Stockholm. Equipment: Tautliner, Mega, Frigo, Flatbed, Coil. Rates €1.20-€2.80/km, distances 300-2000km. Each load must have postedBy set to a company name string, age set to a random minutes integer 1-480, commodity set (e.g. 'Auto Parts', 'Electronics', 'Steel Coils', 'Frozen Food', 'Building Materials', etc.), truckRequired matching equipmentType.",
+    "Rewrite the searchLoads handler in loadsController.ts — accept query params: market, originCity, originState, destCity, destState, equipmentType (exact string match or 'ALL' = no filter), minRate, maxRate, pickupDateFrom, pickupDateTo, minDistance, maxDistance. Filter mockLoads array in-memory. Sort by createdAt descending (use age ascending as proxy — lower age = newer). Return { loads: filteredResults, total: number, market: string|null, filters: appliedFiltersObject }.",
+    "Add getLoadById handler in loadsController.ts — GET /api/loads/:id. Find load in mockLoads by id. Return 404 with { error: 'Load not found' } if missing. Otherwise return { load }.",
+    "Keep pickLoad handler unchanged except ensure it sets pickedById to req.user.id and returns 409 { error: 'Load already picked' } when status !== 'AVAILABLE'.",
+    "Keep getActiveLoads handler unchanged — filters mockLoads where pickedById === req.user.id && status === 'PICKED', returns { loads, total }.",
+    "Add getLoadStats handler in loadsController.ts — computes: totalAvailable (count AVAILABLE loads), byMarket { USA: number, EUROPE: number }, byEquipmentType (Record<string, number> counting each type across all loads), avgRateUSA (average rate of USA loads), avgRateEurope (average rate of Europe loads). Return { stats }.",
+    "Rewrite backend/src/routes/loads.ts — wire all 5 endpoints: GET /search → searchLoads (public), GET /stats → getLoadStats (public), GET /active → authenticate, getActiveLoads, POST /pick/:id → authenticate, pickLoad, GET /:id → getLoadById (public). IMPORTANT: /stats and /active must be declared BEFORE /:id to avoid Express treating 'stats'/'active' as an id param."
+  ],
+  "acceptance_criteria": [
+    "backend/src/types/load.ts exports MockLoad interface with all required fields",
+    "mockLoads array contains exactly 45 entries (25 USA + 20 Europe)",
+    "All USA loads have ratePerMile set (rate/distance) and ratePerKm null",
+    "All Europe loads have ratePerKm set (rate/distance) and ratePerMile null",
+    "GET /api/loads/search?market=USA returns only USA loads",
+    "GET /api/loads/search?equipmentType=Flatbed returns only Flatbed loads",
+    "GET /api/loads/stats returns { stats: { totalAvailable, byMarket, byEquipmentType, avgRateUSA, avgRateEurope } }",
+    "GET /api/loads/:id returns 404 for unknown id",
+    "POST /api/loads/pick/:id returns 409 when load is already PICKED",
+    "npx tsc --noEmit in backend/ exits 0"
+  ],
+  "verification": [
+    "cd '/Users/apple/Desktop/AWS /aws-project-coding/truckBusinessTrac/backend' && npx tsc --noEmit"
+  ],
+  "blocked_reason": null,
+  "findings": "All 45 mock loads created (25 USA + 20 Europe). USA loads: equipment cycles Flatbed/Dry Van/Reefer/Step Deck/Lowboy, ratePerMile computed, ratePerKm null. Europe loads: equipment cycles Tautliner/Mega/Frigo/Flatbed/Coil, ratePerKm computed, ratePerMile null. All loads include postedBy (company name), age (1–480 min), commodity, truckRequired matching equipmentType, deliveryDate (pickupDate + transit days). Five routes wired in correct order: /search, /stats, /active (auth), /pick/:id (auth), /:id. pickLoad returns 409 with message 'Load already picked'. getLoadStats aggregates totalAvailable, byMarket, byEquipmentType, avgRateUSA, avgRateEurope. npx tsc --noEmit exits 0."
+}
