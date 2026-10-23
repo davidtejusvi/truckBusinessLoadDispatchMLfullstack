@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        Role      @default(CARRIER)
+  market      Market    @default(USA)
+  company     Company?  @relation(fields: [companyId], references: [id])
+  companyId   String?
+  loads       Load[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Company {
+  id          String    @id @default(cuid())
+  name        String
+  mcNumber    String?
+  dotNumber   String?
+  vatNumber   String?
+  market      Market
+  users       User[]
+  createdAt   DateTime  @default(now())
+}
+
+model Load {
+  id              String      @id @default(cuid())
+  externalId      String?
+  market          Market
+  originCity      String
+  originState     String
+  destCity        String
+  destState       String
+  equipmentType   String
+  weight          Float?
+  distance        Float?
+  rate            Float?
+  pickupDate      DateTime
+  status          LoadStatus  @default(AVAILABLE)
+  pickedBy        User?       @relation(fields: [pickedById], references: [id])
+  pickedById      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+enum Role {
+  CARRIER
+  BROKER
+  DISPATCHER
+}
+
+enum Market {
+  USA
+  EUROPE
+}
+
+enum LoadStatus {
+  AVAILABLE
+  PICKED
+  COMPLETED
+  CANCELLED
+}
