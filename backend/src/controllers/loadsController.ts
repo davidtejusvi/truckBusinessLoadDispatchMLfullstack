@@ -572,8 +572,8 @@ export const getLoadStats = async (_req: Request, res: Response): Promise<void> 
   const totalAvailable = available.length;
 
   const byMarket = {
-    USA: mockLoads.filter(l => l.market === 'USA').length,
-    EUROPE: mockLoads.filter(l => l.market === 'EUROPE').length,
+    USA: available.filter(l => l.market === 'USA').length,
+    EUROPE: available.filter(l => l.market === 'EUROPE').length,
   };
 
   const byEquipmentType: Record<string, number> = {};
