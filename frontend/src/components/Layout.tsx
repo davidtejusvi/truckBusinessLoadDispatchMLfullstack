@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Truck, TrendingUp, User, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Truck, TrendingUp, User, LogOut, Menu, X, PackageCheck } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import MarketBadge from './MarketBadge';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/loads', icon: Truck, label: 'Loads' },
+  { to: '/loads/active', icon: PackageCheck, label: 'Active Loads' },
   { to: '/predictions', icon: TrendingUp, label: 'Predictions' },
   { to: '/profile', icon: User, label: 'Profile' },
 ];
@@ -34,10 +35,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             to={to}
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                isActive
-                  ? 'bg-accent text-white'
-                  : 'text-slate-400 hover:bg-navy-800 hover:text-white'
+              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
+                ? 'bg-accent text-white'
+                : 'text-slate-400 hover:bg-navy-800 hover:text-white'
               }`
             }
           >

@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import LoadsPage from './pages/LoadsPage';
+import LoadDetailPage from './pages/LoadDetailPage';
+import ActiveLoadsPage from './pages/ActiveLoadsPage';
 import PredictionsPage from './pages/PredictionsPage';
 import { useAuthStore } from './store/authStore';
 
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/loads" element={<ProtectedRoute><LoadsPage /></ProtectedRoute>} />
+        <Route path="/loads/active" element={<ProtectedRoute><ActiveLoadsPage /></ProtectedRoute>} />
+        <Route path="/loads/:id" element={<ProtectedRoute><LoadDetailPage /></ProtectedRoute>} />
         <Route path="/predictions" element={<ProtectedRoute><PredictionsPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
