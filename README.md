@@ -151,4 +151,4 @@ Services:
 
 ---
 
-© 2024 TruckBiz. Built for carriers worldwide.
+© 2026 TruckBiz. Built for carriers worldwide.

@@ -66,7 +66,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-navy-700 px-8 py-6 text-center text-slate-500 text-sm">
-        © 2024 TruckBiz. Built for carriers worldwide.
+        © 2026 TruckBiz. Built for carriers worldwide.
       </footer>
     </div>
   );
