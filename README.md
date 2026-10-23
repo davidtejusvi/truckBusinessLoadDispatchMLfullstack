@@ -4,6 +4,16 @@
 
 TruckBiz is a full-stack freight management platform for carriers, brokers, and dispatchers operating in the **USA** and **Europe** markets. It lets users browse and pick available freight loads, view AI-powered rate predictions, and manage their operations from a single dashboard.
 
+<img width="1774" height="904" alt="Screenshot 2026-10-24 at 1 06 24 AM" src="https://github.com/user-attachments/assets/def38834-6736-49a3-8eb7-8e9c18f347f7" />
+<img width="555" height="841" alt="Screenshot 2026-10-24 at 1 06 39 AM" src="https://github.com/user-attachments/assets/22c4596c-b376-44a4-8e39-cc853e07d599" />
+<img width="1754" height="925" alt="Screenshot 2026-10-24 at 1 06 47 AM" src="https://github.com/user-attachments/assets/29c8169a-e691-4de1-a714-cd18f1e8ba8b" />
+<img width="1768" height="998" alt="Screenshot 2026-10-24 at 1 11 18 AM" src="https://github.com/user-attachments/assets/5811ae55-f814-42d1-b1d8-d533e66f1f3a" />
+<img width="1780" height="944" alt="Screenshot 2026-10-24 at 1 11 07 AM" src="https://github.com/user-attachments/assets/8ba23663-a6d2-4e38-a057-15fce1b79524" />
+<img width="1779" height="943" alt="Screenshot 2026-10-24 at 1 10 54 AM" src="https://github.com/user-attachments/assets/96ed1dab-dd1c-4209-a3c7-a79d9cd346e8" />
+
+
+
+
 ---
 
 ## Tech Stack
