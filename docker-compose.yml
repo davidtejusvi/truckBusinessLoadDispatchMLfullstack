@@ -32,5 +32,14 @@ services:
     depends_on:
       - backend
 
+  ml-service:
+    build: ./ml-service
+    ports:
+      - "8000:8000"
+    environment:
+      ML_SERVICE_PORT: "8000"
+    depends_on:
+      - backend
+
 volumes:
   pgdata:

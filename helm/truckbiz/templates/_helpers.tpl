@@ -40,3 +40,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "truckbiz.frontendFullname" -}}
 {{- printf "%s-frontend" (include "truckbiz.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/* ML service fullname */}}
+{{- define "truckbiz.mlServiceFullname" -}}
+{{- printf "%s-ml-service" (include "truckbiz.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}

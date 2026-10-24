@@ -3,3 +3,37 @@ dist/
 .env
 *.local
 .DS_Store
+
+# ── Secrets & credentials ──────────────────────────────────────────────────────
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cert
+*.pub
+*.ppk
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.token
+*.secret
+credentials
+credentials.json
+service-account.json
+gcloud-service-key.json
+*.kube/config
+.kube/config
+.env.*
+!.env.example
+
+# ── Terraform state & secrets ─────────────────────────────────────────────────
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+crash.log
+.terraform/
+.terraform.lock.hcl
+
